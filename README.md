@@ -17,24 +17,100 @@ In the future, we will support other tasks such as chatbot conversations, image 
 (3) Login with this wallet on sixgpt.xyz
 
 
-## Run the miner
-Clone the repository:
-```
-git clone git@github.com:sixgpt/miner.git
-cd miner
+# Run miner
+
+## Before start:
+* You must have logged into https://sixgpt.xyz with your `wallet` & `email` before running the miner
+* Make sure the wallet associated with your vana private key has enough $VANA balance on the desired network (at least 0.1) - [VANA faucet](https://faucet.vana.org/satori)
+
+## Install Docker
+```console
+# Docker
+sudo apt update -y && sudo apt upgrade -y
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do sudo apt-get remove $pkg; done
+
+sudo apt-get update
+sudo apt-get install ca-certificates curl gnupg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update -y && sudo apt upgrade -y
+
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Docker version check
+docker --version
 ```
 
-Set the following environment variables:
+## Install sixgpt
+**1. Create folders**
+```console
+mkdir sixgpt
 ```
-export VANA_PRIVATE_KEY=<your_private_key>
+```console
+cd sixgpt
+```
+
+**2. Set Variables - Replace `your_private_key`**
+```console
+export VANA_PRIVATE_KEY=your_private_key
 export VANA_NETWORK=moksha
 ```
 
-Run the miner:
+**3. Create docker-compose.yml**
+```console
+nano docker-compose.yml
 ```
-docker compose up
+Enter the following code in it
+```console
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:0.3.12
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+ 
+  sixgpt3:
+    image: sixgpt/miner:latest
+    ports:
+      - "3015:3000"
+    depends_on:
+      - ollama
+    environment:
+      - VANA_PRIVATE_KEY=${VANA_PRIVATE_KEY}
+      - VANA_NETWORK=${VANA_NETWORK}
+    restart: always
+
+volumes:
+  ollama:
+```
+To save: `CTRL+X+Y`+`ENTER`
+
+ Set Variables - Replace `your_private_key`**
+```console
+export VANA_PRIVATE_KEY=your_private_key
+export VANA_NETWORK=moksha
 ```
 
-## Notes
-- You must have logged into sixgpt.xyz with your wallet before running the miner
-- Make sure the wallet associated with your vana private key has enough $VANA balance on the desired network (at least 0.1)
+## Start miner
+```
+docker compose up -d
+```
+
+## Logs
+```
+docker compose logs -fn 100
+```
+
